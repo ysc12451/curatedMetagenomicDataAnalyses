@@ -1,0 +1,52 @@
+---
+title: "CRC"
+output: html_document
+date: "2023-06-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Required packages:
+```{r}
+suppressPackageStartupMessages({
+  library(table1)
+  library(DT)
+  library(dplyr)
+  library(curatedMetagenomicData)
+  library(curatedMetagenomicAnalyses)
+})
+```
+
+
+```{r, message=FALSE}
+load("CRC.rda")
+crc <- se
+rm(se)
+```
+
+
+```{r}
+table1::table1( ~ disease + disease_subtype + age + gender + country + study_name,
+                data = colData(crc))
+```
+
+```{r}
+prevalences <- rowSums(assay(crc) > 0) / ncol(crc) 
+prevalences <- tibble(species = names(prevalences), prevalence = signif(prevalences, 2)) %>%
+  filter(prevalence > 0) %>%
+  arrange(-prevalence)
+DT::datatable(prevalences)
+```
+
+```{r}
+crc_mat <- t(assays(crc)$relative_abundance)
+```
+
+```{r}
+curatedMetagenomicData("ThomasAM_2019_c", dryrun = FALSE)
+```
+
+
+
