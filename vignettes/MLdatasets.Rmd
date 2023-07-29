@@ -127,22 +127,6 @@ study_data <- map(study_names, ~ curatedMetagenomicData(glue("{.}.relative_abund
 ```
 
 ```{r}
-# metadata: study names and health condition
-metadata <- map_dfr(
-  study_data, ~ colData(.[[1]]) |>
-    as_tibble() |>
-    select(study_name, study_condition)
-)
-obs_names <- (colnames(unified_data))
-obs_names <- obs_names[2:length(obs_names)]
-rownames(metadata) <- obs_names
-metadata <- cbind(obs_names, metadata)
-colnames(metadata)[1] = "observations"
-write_csv(metadata, "crc_res.csv")
-```
-
-
-```{r}
 # unify into a single SE object
 unified_data <- map(study_data, ~ assay(.[[1]])) |>
   map(~ data.frame(.) |> rownames_to_column("taxon")) |>
@@ -151,6 +135,24 @@ unified_data <- map(study_data, ~ assay(.[[1]])) |>
 dim(unified_data)
 # map(study_data, ~ dim(assay(.[[1]])))
 ```
+
+```{r}
+# metadata: study names and health condition
+metadata <- map_dfr(
+  study_data, ~ colData(.[[1]]) |>
+    as_tibble() |>
+    select(study_name, study_condition)
+)
+
+obs_names <- (colnames(unified_data))
+obs_names <- obs_names[2:length(obs_names)]
+rownames(metadata) <- obs_names
+metadata <- cbind(obs_names, metadata)
+colnames(metadata)[1] = "observations"
+
+write_csv(metadata, "crc_meta.csv")
+```
+
 ```{r}
 numobs_list = map(study_data, ~ dim(assay(.[[1]]))[2])
 study_names_col = list()
@@ -160,8 +162,21 @@ for (i in length(study_names)){
 ```
 
 ```{r}
+# crc_separate_taxon.csv: rows: obs, cols: species, with separate taxon level
 unified_data2 <- unified_data |>
   tidyr::separate("taxon", c("kingdom", "phylum", "class", "order", "family", "genus", "species"), sep = "\\|")
+
+# save separate feature data: rows: obs, cols: species, with separate taxon level
+unified_data2 <- t(unified_data2)
+meta_temp <- data.frame(matrix(NA, nrow = 7, ncol = 3))
+meta_temp[,1] <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
+names(meta_temp) <- colnames(metadata)
+meta_temp <- rbind(meta_temp, metadata)
+unified_data2 <- cbind(meta_temp, unified_data2)
+unified_data2 <- unified_data2[,2:ncol(unified_data2)]
+
+  
+write.csv(unified_data2, "crc_separate_taxon.csv")
 ```
 
 ```{r}
@@ -169,18 +184,14 @@ unified_data2 <- unified_data |>
 unified_data3 <- t(unified_data)
 colnames(unified_data3) = unified_data3[1,]
 unified_data3 = unified_data3[-1,]
-unified_data3 <- cbind(metadata, unified_data3)
+
+unified_data3 <- cbind(meta_temp, unified_data3)
 colnames(unified_data3)[1] = "observations"
-write_csv(unified_data3, "crc_all.csv")
+write_csv(unified_data3, "crc_whole_taxon.csv")
 ```
 
 ```{r}
 unique(unified_data3[,2])
 ```
 
-```{r}
-# save separate feature data: rows: obs, cols: species, with separate taxon level
-unified_data2 <- t(unified_data2)
-write.csv(unified_data2, "crc_separate_features.csv")
-```
 
