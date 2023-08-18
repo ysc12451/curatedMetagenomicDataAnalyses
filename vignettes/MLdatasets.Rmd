@@ -44,6 +44,26 @@ library(tidyverse)
 library(glue)
 ```
 
+
+```{r}
+sampleMetadata |>
+    filter(age >= 18) |>
+    filter(!is.na(alcohol)) |>
+    filter(body_site == "stool") |>
+    select(where(~ !all(is.na(.x)))) |>
+    returnSamples("relative_abundance", rownames = "short")
+```
+
+```{r}
+alcoholStudy <-
+    filter(sampleMetadata, age >= 18) |>
+    filter(!is.na(alcohol)) |>
+    filter(body_site == "stool") |>
+    select(where(~ !all(is.na(.x)))) |>
+    returnSamples("relative_abundance", rownames = "short")
+```
+
+
 # Investigate potential response variables
 
 These are the 10 study conditions most commonly found in curatedMetagenomicData:
