@@ -131,19 +131,13 @@ exprs.int = do.call(rbind, int.out$H.list) %*% t(int.out$W)
 Hnorm = do.call(rbind, int.out$H.list) %*% diag(colSums(int.out$W))
 ```
 
-```{r}
-a = do.call(rbind, int.out$H.list)
-b = diag(colSums(int.out$W))
-```
-
-
 
 Visualize the integrated data via UMAP plot,
 ```{r, eval=T, fig.align='center',fig.show="hold", fig.cap='Integrated pancreas islet cells data sests from four technologies.'}
 studies = do.call(c, lapply(data.list$metadata.list[ref.data], function(x) x$study_name))
 studies_all = do.call(c, lapply(data.list$metadata.list, function(x) x$study_name))
 # celltype = do.call(c, data.list$labels.list[ref.data])
-celltype = tech
+celltype = studies
 
 umap.out = plot_umap(X=Hnorm, labels=studies, 
                      pca = NULL, n_components = 2, n_neighbors = 50, min_dist = 0.1, # umap parameters
@@ -199,6 +193,7 @@ est.labels = asign_labels(exprs.source=do.call(rbind, int.out$H.list),
                            labels.source=do.call(c, data.list$labels.list[ref.data]))
 plotContTable(est_label=est.labels, true_label=data.list$labels.list[[2]], ylab='Mapped type')
 ```
+
 ```{r}
 a = table(est.labels, data.list$labels.list[[2]])[1:2,1:2]
 ```
@@ -209,13 +204,20 @@ a = table(est.labels, data.list$labels.list[[2]])[1:2,1:2]
 confusion_matrix <- confusionMatrix(table(est.labels, data.list$labels.list[[2]])[2:3,1:2])
 
 # Precision, recall, F1-score
+accuracy <- confusion_matrix$overall["Accuracy"]
 precision <- confusion_matrix$byClass["Precision"]
 recall <- confusion_matrix$byClass["Recall"]
 f1_score <- confusion_matrix$byClass["F1"]
 
 # Print the metrics
+print(accuracy)
 print(precision)
 print(recall)
 print(f1_score)
+```
+
+```{r}
+writeLines(data.list$labels.list[[2]], "cFIT_test.txt")
+writeLines(est.labels, "cFIT_pred.txt")
 ```
 

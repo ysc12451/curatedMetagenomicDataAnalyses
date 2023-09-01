@@ -1,0 +1,47 @@
+---
+title: "BasicMethods"
+output: html_document
+date: "2023-08-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load required libraries
+library(dplyr)      # For data manipulation
+library(caret)      # For data preprocessing
+library(FactoMineR) # For PCA
+library(glmnet)     # For logistic regression
+
+data_file_path = "D:/OneDrive/OneDrive - UW-Madison/Kris/Code/curatedMetagenomicDataAnalyses/vignettes/"
+```
+
+
+```{r}
+crc_whole <- read.csv(paste0(data_file_path, "crc_whole_taxon.csv"))
+# crc_sepa <- read.csv(paste0(data_file_path, "crc_separate_taxon.csv"))
+crc_meta <- read.csv(paste0(data_file_path, "crc_meta.csv"))
+study_names <- unique(crc_whole[,2])
+study_nobs <- c(154,60,81,80,60,80,104,125,616,128,156)
+
+# remove NA in the response
+rows_with_na <- which(!complete.cases(crc_whole[,3])) #
+crc_whole <- crc_whole[-rows_with_na, ]
+crc_meta <- crc_meta[-rows_with_na, ]
+
+# temperally set NA in the count matrix as 0
+crc_whole[is.na(crc_whole)] <- 0
+
+colnames(crc_whole) <- gsub("__", "-", colnames(crc_whole))
+colnames(crc_whole) <- gsub("_", "-", colnames(crc_whole))
+
+print(paste(nrow(crc_whole), 'observations, ', ncol(crc_whole)-3, 'species'))
+```
+
+```{r}
+# PCA
+pca_result <- PCA(features, scale.unit = TRUE)
+```
+
