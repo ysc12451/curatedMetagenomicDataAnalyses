@@ -15,6 +15,8 @@ First load the package
 ```{r, eval=T}
 library(cFIT)
 library(caret)
+library(nnet)
+library(stats)
 options(warn = -1)
 data_file_path = "D:/OneDrive/OneDrive - UW-Madison/Kris/Code/curatedMetagenomicDataAnalyses/vignettes/"
 ```
@@ -43,17 +45,17 @@ print(paste(nrow(crc_whole), 'observations, ', ncol(crc_whole)-3, 'species'))
 
 
 ```{r, eval=T}
-meta_data = list(FengQ_2015=data.frame(tech=rep(name, times = study_nobs[1])),
-                GuptaA_2019=data.frame(tech=rep(name, times = study_nobs[2])),
-                HanniganGD_2017=data.frame(tech=rep(name, times = study_nobs[3])),
-                ThomasAM_2018a=data.frame(tech=rep(name, times = study_nobs[4])),
-                ThomasAM_2018b=data.frame(tech=rep(name, times = study_nobs[5])),
-                ThomasAM_2019_c=data.frame(tech=rep(name, times = study_nobs[6])),
-                VogtmannE_2016=data.frame(tech=rep(name, times = study_nobs[7])),
-                WirbelJ_2018=data.frame(tech=rep(name, times = study_nobs[8])),
-                YachidaS_2019=data.frame(tech=rep(name, times = study_nobs[9])),
-                YuJ_2015=data.frame(tech=rep(name, times = study_nobs[10])),
-                ZellerG_2014=data.frame(tech=rep(name, times = study_nobs[11])))
+meta_data = list(FengQ_2015=data.frame(tech=rep('FengQ_2015', times = study_nobs[1])),
+                GuptaA_2019=data.frame(tech=rep('GuptaA_2019', times = study_nobs[2])),
+                HanniganGD_2017=data.frame(tech=rep('HanniganGD_2017', times = study_nobs[3])),
+                ThomasAM_2018a=data.frame(tech=rep('ThomasAM_2018a', times = study_nobs[4])),
+                ThomasAM_2018b=data.frame(tech=rep('ThomasAM_2018b', times = study_nobs[5])),
+                ThomasAM_2019_c=data.frame(tech=rep('ThomasAM_2019_c', times = study_nobs[6])),
+                VogtmannE_2016=data.frame(tech=rep('VogtmannE_2016', times = study_nobs[7])),
+                WirbelJ_2018=data.frame(tech=rep('WirbelJ_2018', times = study_nobs[8])),
+                YachidaS_2019=data.frame(tech=rep('YachidaS_2019', times = study_nobs[9])),
+                YuJ_2015=data.frame(tech=rep('YuJ_2015', times = study_nobs[10])),
+                ZellerG_2014=data.frame(tech=rep('ZellerG_2014', times = study_nobs[11])))
 ```
 
 
@@ -76,7 +78,7 @@ cFIT integration is composed of the following procedure:
 * Model parameter estimation. The model parameters are estimated throught iterative NMF
 * Post processing, evaluation, and downstream analysis.
 
-Select 2000 highly variable genes
+Select 1000 highly variable genes
 ```{r, eval=T}
 # select highly variable genes
 species = select_genes(data.list$X.list, ngenes=1000, verbose=F)
@@ -103,7 +105,7 @@ Other minor parameters that can be adjusted is
 ```{r, eval=T}
 # integrate four largest datasets, takes roughly 20 minutes to run without parallization
 ref.data = c(1,3,4,5,6,7,8,9,10,11)
-int.out = CFITIntegrate(X.list=exprs.list[ref.data], r=15, max.niter=100, future.plan='sequential', seed=0, verbose=F)
+int.out = CFITIntegrate(X.list=exprs.list[ref.data], r=50, max.niter=200, future.plan='sequential', seed=0, verbose=F)
 
 # For large datasets we recommende using the sketched version for fast convergence.
 # int.out = CFITIntegrate_sketched(X.list=exprs.list[ref.data], r=15, subsample.prop = 0.1,
@@ -113,8 +115,13 @@ int.out = CFITIntegrate(X.list=exprs.list[ref.data], r=15, max.niter=100, future
 
 
 ```{r}
-save(int.out, file = paste0(data_file_path, "crc_intout.RData"))
+save(int.out, file = paste0(data_file_path, "crc_intout_r50_iter200.RData"))
 ```
+
+```{r}
+load("crc_intout_r50.RData")
+```
+
 
 The output is a list containing
 
@@ -125,11 +132,89 @@ The output is a list containing
 We obtain the integrated data via
 ```{r,  eval=T}
 # nobs-by-nspecies expression matrix
-exprs.int = do.call(rbind, int.out$H.list) %*% t(int.out$W)
+exprs.int = do.call(rbind, int.out$H.list) %*% t(int.out$W) # 1584 * 935
 
 # nobs-by-r low dimensiional representation
-Hnorm = do.call(rbind, int.out$H.list) %*% diag(colSums(int.out$W))
+Hnorm = do.call(rbind, int.out$H.list) %*% diag(colSums(int.out$W)) # 1584 * 15
 ```
+
+```{r}
+nrow(exprs.int)
+ncol(Hnorm)
+```
+## Data transfer
+
+Next we transfer the learned factor matrix to the smallest data set, containing 60 observations from study GuptaA_2019.
+
+```{r, eval=T}
+# transfer: run time 10 seconds
+tf.out = CFITTransfer(Xtarget=exprs.list[[2]], Wref=int.out$W, max.niter = 100, seed=0, verbose=F)
+```
+
+## ML prediction
+
+```{r}
+# Optionally, split the data into training and testing sets
+# set.seed(123)  # for reproducibility
+# Convert the target variable to a factor (assuming it's categorical)
+train_target <- as.factor(unlist(data.list$labels.list[ref.data]))
+test_target <- as.factor(unlist(data.list$labels.list[2]))
+train_data <- Hnorm
+test_data <- tf.out[["H"]]
+
+# X_train_r <- py_run_string("train_data", convert = TRUE)
+# y_train_r <- py_run_string("train_target", convert = TRUE)
+# X_test_r <- py_run_string("test_data", convert = TRUE)
+# y_test_r <- py_run_string("test_target", convert = TRUE)
+```
+
+```{python}
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
+
+# Basic methods
+model = LogisticRegression(multi_class='multinomial', max_iter=800, solver='lbfgs')
+# model = RandomForestClassifier()
+# model = KNeighborsClassifier()
+# model = xgb.XGBClassifier()
+
+X_train_sd = StandardScaler().fit_transform(r.train_data)
+X_test_sd = StandardScaler().fit_transform(r.test_data)
+
+pca_train = PCA(n_components=15)
+X_train_pca = pca_train.fit_transform(X_train_sd)
+X_test_pca = pca_train.transform(X_test_sd)
+
+model.fit(X_train_pca, r.train_target)
+# py_run_string("model.fit(r.train_data, r.train_target)", convert = TRUE)
+y_pred = model.predict(X_test_pca)
+```
+
+
+```{r}
+# Fit the multi-class logistic regression model
+# model <- multinom(train_target ~ ., data = as.data.frame(train_data), family = multinomial())
+
+# Make predictions on the test data
+# y_pred <- predict(model, newdata = test_data, type = "class")
+```
+
+
+```{r}
+# Calculate accuracy (for example)
+plotContTable(est_label=py$y_pred, true_label=test_target, ylab='Mapped type')
+```
+
+```{python}
+class_report = classification_report(r.test_target, y_pred)
+print("LogisticRegression Report:\n", class_report)
+```
+
+
+
 
 
 Visualize the integrated data via UMAP plot,
@@ -158,14 +243,7 @@ alignment.score.out = calculate_alignment(X.list=list(Hnorm), k=30, balanced=F, 
 alignment.score.out$alignment.per.dataset
 ```
 
-## Data transfer
 
-Next we transfer the learned factor matrix to the smallest data set, containing 60 observations from study GuptaA_2019.
-
-```{r, eval=T}
-# transfer: run time 10 seconds
-tf.out = CFITTransfer(Xtarget=exprs.list[[2]], Wref=int.out$W, max.niter = 100, seed=0, verbose=F)
-```
 
 Visualize the transferred results via UMAP plot,
 ```{r, eval=T, fig.align='center',fig.show="hold", fig.cap='cFIT transfer results.'}
