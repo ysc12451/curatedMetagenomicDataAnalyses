@@ -53,3 +53,6 @@ __cache__/
 # Pkgdown
 docs
 *.csv
+*.RData
+*.RData
+*.RData
