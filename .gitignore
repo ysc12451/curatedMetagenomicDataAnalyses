@@ -52,9 +52,17 @@ __cache__/
 
 # Pkgdown
 docs
+<<<<<<< Updated upstream
 *.csv
 *.RData
 *.RData
 *.RData
 *.RData
 *.RData
+=======
+*.pt
+>>>>>>> Stashed changes
+*.csv
+*.csv
+*.csv
+*.csv
