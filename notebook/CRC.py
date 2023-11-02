@@ -3,7 +3,8 @@ import numpy as np
 import seaborn as sns
 import sys
 import os
-os.chdir("/Users/zyxu/Documents/R/23spring")
+# os.chdir("/Users/zyxu/Documents/R/23spring")
+os.chdir("D:\OneDrive\OneDrive - UW-Madison\Kris\Code\curatedMetagenomicDataAnalyses\\notebook")
 import torch
 import torch.optim as optim
 import time
@@ -52,7 +53,8 @@ def compute_loss(V, matrix_data, study_names, results):
             X_i = torch.tensor(X_i,dtype=torch.float32)
             
             # Construct Ci matrix
-            C_i = torch.eye(935)
+            # C_i = torch.eye(935)
+            C_i = torch.eye(200)
             for species, high_zero_studies in results.items():
                 if study in high_zero_studies:
                     species_idx = matrix_data.columns.get_loc(species)
