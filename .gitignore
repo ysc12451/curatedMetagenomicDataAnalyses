@@ -54,3 +54,6 @@ __cache__/
 docs
 *.pt
 *.RData
+*.csv
+*.json
+*.npy
