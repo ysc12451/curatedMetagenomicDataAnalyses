@@ -84,27 +84,50 @@ def pre_visz(
     unique_studies = study_names['x'].unique()
     study_decompositions_traditional = {}
 
+    # Step 1: Perform SVD on the entire X matrix
+    X_full = matrix_data.values
+    U_full, Sigma, Vt_full = np.linalg.svd(X_full, full_matrices=False)
+
+    print("rank: ", rank)
+
+    # Step 2: Retain only top 1/10 singular values and vectors
+    Sigma = Sigma[:rank]
+    Vt = Vt_full[:rank, :]
+
+    study_decompositions = {}
+
     for study in unique_studies:
-        # Step 1: Select rows for the current study
-        X = matrix_data[study_names['x'] == study].values
+        # Step 3: Select rows for the current study from the full U matrix
+        study_rows = study_names['x'] == study
+        U_study = U_full[study_rows, :rank]
         
-        # Step 2: SVD decomposition
-        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+
         
-        # Step 3: Retain only top 1/10 singular values and vectors
-        U = U[:, :rank]
-        Sigma = Sigma[:rank]
-        Vt = Vt[:rank, :]
+        study_decompositions[study] = (U_study, Sigma, Vt)
+
+    # =====
+
+    # for study in unique_studies:
+    #     # Step 1: Select rows for the current study
+    #     X = matrix_data[study_names['x'] == study].values
         
-        # Step 4: Construct C matrix
-        C = np.eye(matrix_data.shape[1])
-        species_with_high_zeros = results.keys() & set(matrix_data.columns)
-        for species in species_with_high_zeros:
-            if study in results[species]:
-                species_index = matrix_data.columns.get_loc(species)
-                C[species_index, species_index] = 0
+    #     # Step 2: SVD decomposition
+    #     U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
         
-        study_decompositions_traditional[study] = (U, Sigma, Vt, C)
+    #     # Step 3: Retain only top 1/10 singular values and vectors
+    #     U = U[:, :rank]
+    #     Sigma = Sigma[:rank]
+    #     Vt = Vt[:rank, :]
+        
+    #     # Step 4: Construct C matrix
+    #     C = np.eye(matrix_data.shape[1])
+    #     species_with_high_zeros = results.keys() & set(matrix_data.columns)
+    #     for species in species_with_high_zeros:
+    #         if study in results[species]:
+    #             species_index = matrix_data.columns.get_loc(species)
+    #             C[species_index, species_index] = 0
+        
+    #     study_decompositions_traditional[study] = (U, Sigma, Vt, C)
     
 
 
