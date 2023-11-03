@@ -94,7 +94,6 @@ def pre_visz(
     Sigma = Sigma[:rank]
     Vt = Vt_full[:rank, :]
 
-    study_decompositions = {}
 
     for study in unique_studies:
         # Step 3: Select rows for the current study from the full U matrix
@@ -103,7 +102,7 @@ def pre_visz(
         
 
         
-        study_decompositions[study] = (U_study, Sigma, Vt)
+        study_decompositions_traditional[study] = (U_study, Sigma, Vt)
 
     # =====
 
