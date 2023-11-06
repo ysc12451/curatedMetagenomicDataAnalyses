@@ -35,10 +35,16 @@ def load_file(args):
         study_names['study'] = study_names['x']
     return matrix_data, study_names
 
-def select_species(matrix_data, study_names):
-    threshold = 0.98 * matrix_data.shape[0]
-    cols_with_zeros = (matrix_data == 0).sum(axis=0) > threshold
+def select_species(matrix_data, study_names, threshold_value = 0.0):
+    # print("matrix_data type: ", type(matrix_data))
+    threshold = threshold_value * matrix_data.shape[0]
+    # print(f"(matrix_data == 0).sum(): {(matrix_data.values == 0).sum()}")
+    # print("====")
+    # print(f"(matrix_data == 0).sum(axis=0): {(matrix_data == 0).sum(axis=0)}")
+    cols_with_zeros = (matrix_data == 0).sum(axis=0) >= threshold
     selected_species = matrix_data.columns[cols_with_zeros]
+    # print(f"selected_species: {selected_species.shape}")
+    # assert False
     
     threshold_study = 1
 
@@ -80,6 +86,8 @@ def compute_loss(V, matrix_data, study_names, results):
                     species_idx = matrix_data.columns.get_loc(species)
                     C_i[species_idx, species_idx] = 0
             
+            # print(f"C_i.sum(): {C_i.sum()}")
+            
             # Compute U, Sigma for current study and given V in a memory-efficient manner
             # print(X_i.dtype)
             # print(C_i.dtype)
@@ -96,7 +104,7 @@ def compute_loss(V, matrix_data, study_names, results):
             # print((X_i @ C_i).shape)
             residual = X_i - U_i @ torch.diag_embed(Sigma_i) @ V.T @ C_i
             total_loss += torch.norm(residual, p='fro') ** 2
-
+        # assert False
         return total_loss
 
 def time_str(t):
@@ -146,11 +154,15 @@ def train(args, matrix_data, study_names, results):
 def main():
     args = parse_args()
     matrix_data, study_names = load_file(args)
+    # print(f"matrix_data.shape: {matrix_data.shape}")
+    # print(f"study_names.shape: {study_names.shape}")
+    # print(f"matrix_data.: {matrix_data}")
+    # print(f"study_names.: {study_names}")
     results = select_species(matrix_data, study_names)
 
     V = train(args, matrix_data, study_names, results)
-    print(V.shape)
-    print(V)
+    # print(V.shape)
+    # print(V)
 
     
 
