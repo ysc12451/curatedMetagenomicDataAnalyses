@@ -68,3 +68,5 @@ docs
 *.csv
 *.json
 *.npy
+*.pyc
+*.zip
