@@ -3,7 +3,16 @@ import numpy as np
 import seaborn as sns
 import sys
 import os
-sys.path.insert(0,"/Users/zyxu/Documents/R/23spring")
+
+# Get the directory of the run.py script
+run_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Get the parent directory of run_dir, which is the project directory
+project_dir = os.path.dirname(run_dir)
+
+# Add the project directory to the Python path
+if project_dir not in sys.path:
+    sys.path.insert(0, project_dir)
 import torch
 import torch.optim as optim
 import time
@@ -82,7 +91,7 @@ def compute_loss(V, matrix_data, study_names, results):
             # Compute the residual for current study
             # print(U_i.shape,torch.diag_embed(Sigma_i).shape,V.T.shape )
             # print((X_i @ C_i).shape)
-            residual = X_i @ C_i - U_i @ torch.diag_embed(Sigma_i) @ V.T
+            residual = X_i - U_i @ torch.diag_embed(Sigma_i) @ V.T @ C_i
             total_loss += torch.norm(residual, p='fro') ** 2
 
         return total_loss
