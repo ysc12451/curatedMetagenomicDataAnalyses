@@ -11,7 +11,9 @@ def load_data(matrix_data_path = "./dataset/sim_matrix_data.csv", study_names_pa
     # Load the matrix from the CSV file
     matrix_data = pd.read_csv(matrix_data_path)
     study_names = pd.read_csv(study_names_path)
-    study_names['study'] = study_names['x']
+    # print(study_names)
+    if not 'study' in study_names.columns:
+        study_names['study'] = study_names['x']
     return matrix_data, study_names
 
 def construct_C_for_study(study, results, matrix_data):
@@ -27,9 +29,11 @@ def construct_C_for_study(study, results, matrix_data):
 def pre_visz(
         matrix_data_path = "./dataset/sim_matrix_data.csv", 
         study_names_path = "./dataset/sim_study_name.csv",
-        study_ground_truth_path  ="./dataset/sim_study_groundTruth.json",
+        study_ground_truth_path_Us  ="./dataset/sim_study_groundTruth.json",
+        study_ground_truth_path_V = None,
         optimized_V_path = "./output/sim/best_V.pt"
-):
+):  
+    # print(matrix_data_path, study_names_path)
     matrix_data, study_names = load_data(matrix_data_path, study_names_path)
 
     rank = 20
@@ -62,6 +66,7 @@ def pre_visz(
 
     ###### our method
     V = torch.load(optimized_V_path)
+    optimized_V = V
     # Create C matrices for each study based on species with a high proportion of zeros
     # Constructing Cs for each study
     Cs = [construct_C_for_study(study, results, matrix_data) for study in unique_studies]
@@ -81,7 +86,7 @@ def pre_visz(
 
     ###### SVD
     # Assuming matrix_data is a DataFrame and study_names is a column vector of the same length
-    unique_studies = study_names['x'].unique()
+    unique_studies = study_names['study'].unique()
     study_decompositions_traditional = {}
 
     # Step 1: Perform SVD on the entire X matrix
@@ -90,19 +95,16 @@ def pre_visz(
 
     print("rank: ", rank)
 
-    # Step 2: Retain only top 1/10 singular values and vectors
     Sigma = Sigma[:rank]
     Vt = Vt_full[:rank, :]
 
 
     for study in unique_studies:
         # Step 3: Select rows for the current study from the full U matrix
-        study_rows = study_names['x'] == study
+        study_rows = study_names['study'] == study
         U_study = U_full[study_rows, :rank]
         
-
-        
-        study_decompositions_traditional[study] = (U_study, Sigma, Vt)
+        study_decompositions_traditional[study] = (U_study, Sigma, Vt.T)
 
     # =====
 
@@ -132,10 +134,12 @@ def pre_visz(
 
     ###### ground truth
     # Load the JSON file
-    with open(study_ground_truth_path, 'r') as json_file:
-        sim_study_groundTruth = json.load(json_file)
+    with open(study_ground_truth_path_Us, 'r') as json_file:
+        sim_study_groundTruth_Us = json.load(json_file)
+    with open(study_ground_truth_path_V, 'r') as json_file:
+        sim_study_ground_truth_V = json.load(json_file)
     
-    return study_decompositions, study_decompositions_traditional, sim_study_groundTruth
+    return study_decompositions, study_decompositions_traditional, sim_study_groundTruth_Us, sim_study_ground_truth_V, optimized_V
 
 
 

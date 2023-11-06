@@ -31,7 +31,8 @@ def load_file(args):
     # Load the matrix from the CSV file
     matrix_data = pd.read_csv(args.matrix_data)
     study_names = pd.read_csv(args.study_names)
-    study_names['study'] = study_names['x']
+    if not 'study' in study_names.columns:
+        study_names['study'] = study_names['x']
     return matrix_data, study_names
 
 def select_species(matrix_data, study_names):
@@ -64,9 +65,11 @@ def select_species(matrix_data, study_names):
 def compute_loss(V, matrix_data, study_names, results):
         matrix_data_tensor = matrix_data.values
         total_loss = 0.0
-        unique_studies = study_names['x'].unique()
+        if not 'study' in study_names.columns:
+            study_names['study'] = study_names['x']
+        unique_studies = study_names['study'].unique()
         for study in unique_studies:
-            study_indices = (study_names['x'] == study).values.nonzero()[0]
+            study_indices = (study_names['study'] == study).values.nonzero()[0]
             X_i = matrix_data_tensor[study_indices]
             X_i = torch.tensor(X_i,dtype=torch.float32)
             
