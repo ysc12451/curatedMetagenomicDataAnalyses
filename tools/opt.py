@@ -119,6 +119,8 @@ def train(args, matrix_data, study_names, results):
         output_path = args.output_path
     else:
         output_path = None
+    if not os.path.exists(output_path):
+        os.makedirs(output_path,exist_ok=True)
     # Adjusting the computation for memory efficiency
 
     # Define the loss function with memory-efficient computations

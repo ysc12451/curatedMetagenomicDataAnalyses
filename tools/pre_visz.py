@@ -29,8 +29,6 @@ def construct_C_for_study(study, results, matrix_data):
 def pre_visz(
         matrix_data_path = "./dataset/sim_matrix_data.csv", 
         study_names_path = "./dataset/sim_study_name.csv",
-        study_ground_truth_path_Us  ="./dataset/sim_study_groundTruth.json",
-        study_ground_truth_path_V = None,
         optimized_V_path = "./output/sim/best_V.pt"
 ):  
     # print(matrix_data_path, study_names_path)
@@ -79,7 +77,7 @@ def pre_visz(
         print(np.dot(X, Cs[i]).shape)
         U, Sigma, _ = np.linalg.svd(np.dot(X, Cs[i]) @ V.detach().numpy(), full_matrices=False)
         U, Sigma = U[:, :rank], Sigma[:rank]
-        study_decompositions[study] = (U, Sigma)
+        study_decompositions[study] = (U, Sigma, Cs[i])
 
     
 
@@ -132,14 +130,9 @@ def pre_visz(
     
 
 
-    ###### ground truth
-    # Load the JSON file
-    with open(study_ground_truth_path_Us, 'r') as json_file:
-        sim_study_groundTruth_Us = json.load(json_file)
-    with open(study_ground_truth_path_V, 'r') as json_file:
-        sim_study_ground_truth_V = json.load(json_file)
     
-    return study_decompositions, study_decompositions_traditional, sim_study_groundTruth_Us, sim_study_ground_truth_V, optimized_V
+    
+    return study_decompositions, study_decompositions_traditional, optimized_V
 
 
 
